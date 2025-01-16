@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天网页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #chat {
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        .message {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .message img {
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+        }
+        .message.user {
+            text-align: left;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+        }
+        #input {
+            display: flex;
+            margin-top: 10px;
+        }
+        #input textarea {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: none;
+            font-size: 16px;
+        }
+        #input button {
+            padding: 10px;
+            margin-left: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #input button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat"></div>
+
+<div id="input">
+    <textarea id="message" rows="2" placeholder="输入消息..." onkeypress="checkEnter(event)"></textarea>
+    <button onclick="sendMessage()">发送</button>
+</div>
+
+<script>
+    const avatars = [
+        'https://i.pravatar.cc/30?img=1',
+        'https://i.pravatar.cc/30?img=2',
+        'https://i.pravatar.cc/30?img=3',
+        'https://i.pravatar.cc/30?img=4',
+        'https://i.pravatar.cc/30?img=5'
+    ];
+
+    function getRandomAvatar() {
+        return avatars[Math.floor(Math.random() * avatars.length)];
+    }
+
+    // 从本地存储加载聊天记录
+    window.onload = function() {
+        const chat = document.getElementById('chat');
+        const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        messages.forEach(msg => {
+            displayMessage(msg.username, msg.avatar, msg.text, msg.timestamp);
+        });
+    };
+
+    function sendMessage() {
+        const messageInput = document.getElementById('message');
+        const chat = document.getElementById('chat');
+        const username = `用户${Math.floor(Math.random() * 1000)}`; // 自动生成昵称
+        const avatar = getRandomAvatar(); // 自动生成头像
+
+        if (messageInput.value.trim() !== '') {
+            const timestamp = new Date().toLocaleTimeString(); // 获取当前时间
+            const message = {
+                username: username,
+                avatar: avatar,
+                text: messageInput.value,
+                timestamp: timestamp
+            };
+            displayMessage(username, avatar, messageInput.value, timestamp);
+            saveMessage(message);
+            messageInput.value = '';
+            chat.scrollTop = chat.scrollHeight; // 滚动到最新消息
+        }
+    }
+
+    function displayMessage(username, avatar, text, timestamp) {
+        const chat = document.getElementById('chat');
+        const message = document.createElement('div');
+        message.className = 'message user';
+        message.innerHTML = `
+            <img src="${avatar}" alt="${username}的头像"> 
+            <strong>${username}:</strong> ${text}
+            <div class="timestamp">${timestamp}</div>
+        `;
+        message.oncontextmenu = function(event) {
+            event.preventDefault(); // 阻止默认右键菜单
+            if (confirm('你确定要撤回这条消息吗？')) {
+                chat.removeChild(message); // 撤回消息
+                removeMessageFromStorage(text, timestamp); // 从本地存储中移除
+            }
+        };
+        chat.appendChild(message);
+    }
+
+    function saveMessage(message) {
+        const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        messages.push(message);
+        localStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+
+    function removeMessageFromStorage(text, timestamp) {
+        let messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        messages = messages.filter(msg => !(msg.text === text && msg.timestamp === timestamp));
+        localStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+
+    function checkEnter(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // 防止换行
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
